@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Michael M Visits</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Visits Log">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --success: #16a34a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 90px; }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    header h1 { font-size: 1.25rem; font-weight: 600; }
+
+    .container { max-width: 650px; margin: 0 auto; padding: 16px; }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .card-title { font-size: 1rem; font-weight: 600; margin-bottom: 12px; }
+
+    /* Form Styles */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .full-width { grid-column: span 2; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    input:focus, textarea:focus { outline: 2px solid var(--primary); border-color: transparent; }
+
+    .rate-preview {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f1f5f9;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-submit:hover { background: var(--primary-hover); }
+
+    /* Month Navigation */
+    .month-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .nav-btn {
+      background: white;
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .month-picker-input {
+      font-weight: 600;
+      font-size: 1rem;
+      border: none;
+      background: transparent;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    /* Table Styles */
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { text-align: left; padding: 10px; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 0.8rem; }
+    td { padding: 10px; border-bottom: 1px solid var(--border); }
+    .text-right { text-align: right; }
+    .btn-delete {
+      color: #ef4444;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    /* Fixed Running Totals Footer */
+    .totals-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #0f172a;
+      color: white;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+      z-index: 20;
+    }
+    .total-item { text-align: center; }
+    .total-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; }
+    .total-value { font-size: 1.15rem; font-weight: 700; color: #38bdf8; }
+    .empty-message { text-align: center; color: var(--text-muted); padding: 24px; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Michael M Visits</h1>
+  </header>
+
+  <div class="container">
+    <!-- Entry Form -->
+    <section class="card">
+      <h2 class="card-title">Add Visit</h2>
+      <form id="visitForm" class="form-grid">
+        <div>
+          <label for="visitDate">Date</label>
+          <input type="date" id="visitDate" required>
+        </div>
+        <div>
+          <label for="visitDuration">Duration (Hours)</label>
+          <input type="number" id="visitDuration" step="0.25" min="0.25" placeholder="e.g. 1.5" required>
+        </div>
+        <div class="full-width">
+          <label for="visitTasks">Tasks / Notes</label>
+          <input type="text" id="visitTasks" placeholder="Optional task description">
+        </div>
+        <div class="full-width rate-preview">
+          <span>Rate: $25.00/hr</span>
+          <span id="calculatedAmount">Calculated: $0.00</span>
+        </div>
+        <div class="full-width">
+          <button type="submit" class="btn-submit">Save Entry</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Month Navigation and Entries -->
+    <section class="card">
+      <div class="month-nav">
+        <button class="nav-btn" id="prevMonth">&larr; Prev</button>
+        <input type="month" id="selectedMonth" class="month-picker-input">
+        <button class="nav-btn" id="nextMonth">Next &rarr;</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="visitsTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Tasks</th>
+              <th class="text-right">Hours</th>
+              <th class="text-right">Amount</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="visitsBody">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Running Total Footer -->
+  <footer class="totals-bar">
+    <div class="total-item">
+      <div class="total-label">Month Total Hours (Col D)</div>
+      <div class="total-value" id="runningTotalHours">0.00 hrs</div>
+    </div>
+    <div class="total-item">
+      <div class="total-label">Month Total Amount (Col E)</div>
+      <div class="total-value" id="runningTotalAmount">$0.00</div>
+    </div>
+  </footer>
+
+  <script>
+    const HOURLY_RATE = 25.00;
+
+    // Seed data from your spreadsheet
+    const initialData = [
+      { id: "1", date: "2026-06-04", tasks: "", duration: 1.5 },
+      { id: "2", date: "2026-06-09", tasks: "", duration: 1.25 },
+      { id: "3", date: "2026-06-17", tasks: "", duration: 1.5 },
+      { id: "4", date: "2026-07-17", tasks: "", duration: 0.5 },
+      { id: "5", date: "2026-07-20", tasks: "", duration: 0.5 },
+      { id: "6", date: "2026-07-23", tasks: "", duration: 0.5 },
+      { id: "7", date: "2026-08-05", tasks: "", duration: 0.5 },
+      { id: "8", date: "2026-08-07", tasks: "", duration: 0.5 },
+      { id: "9", date: "2026-08-10", tasks: "", duration: 0.5 }
+    ];
+
+    // Initialize LocalStorage
+    let visits = JSON.parse(localStorage.getItem('michael_m_visits'));
+    if (!visits || visits.length === 0) {
+      visits = initialData;
+      localStorage.setItem('michael_m_visits', JSON.stringify(visits));
+    }
+
+    // Determine starting month: defaults to current month or August 2026 (last recorded)
+    const monthPicker = document.getElementById('selectedMonth');
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('visitDate').value = today;
+
+    // Default view to August 2026 (where latest data exists), or current month if preferred
+    monthPicker.value = "2026-08";
+
+    // Auto-update Amount preview on Duration input
+    const durationInput = document.getElementById('visitDuration');
+    const calcAmount = document.getElementById('calculatedAmount');
+    durationInput.addEventListener('input', () => {
+      const val = parseFloat(durationInput.value) || 0;
+      calcAmount.textContent = `Calculated: $${(val * HOURLY_RATE).toFixed(2)}`;
+    });
+
+    // Form Submission
+    document.getElementById('visitForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const date = document.getElementById('visitDate').value;
+      const duration = parseFloat(document.getElementById('visitDuration').value);
+      const tasks = document.getElementById('visitTasks').value;
+
+      const newEntry = {
+        id: Date.now().toString(),
+        date,
+        duration,
+        tasks
+      };
+
+      visits.push(newEntry);
+      localStorage.setItem('michael_m_visits', JSON.stringify(visits));
+
+      // Sync month view to the added visit's month
+      monthPicker.value = date.slice(0, 7);
+
+      // Reset form
+      document.getElementById('visitTasks').value = '';
+      document.getElementById('visitDuration').value = '';
+      calcAmount.textContent = 'Calculated: $0.00';
+
+      renderMonthView();
+    });
+
+    // Month Navigation Controls
+    document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1));
+    document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1));
+    monthPicker.addEventListener('change', renderMonthView);
+
+    function changeMonth(delta) {
+      const [year, month] = monthPicker.value.split('-').map(Number);
+      const d = new Date(year, month - 1 + delta, 1);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      monthPicker.value = `${yyyy}-${mm}`;
+      renderMonthView();
+    }
+
+    // Render Table and Running Totals
+    function renderMonthView() {
+      const selected = monthPicker.value; // "YYYY-MM"
+      const tbody = document.getElementById('visitsBody');
+      tbody.innerHTML = '';
+
+      // Filter entries by matching "YYYY-MM"
+      const monthVisits = visits
+        .filter(v => v.date.startsWith(selected))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      let totalHours = 0;
+      let totalAmount = 0;
+
+      if (monthVisits.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="empty-message">No visits recorded for this month.</td></tr>`;
+      } else {
+        monthVisits.forEach(item => {
+          const amount = item.duration * HOURLY_RATE;
+          totalHours += item.duration;
+          totalAmount += amount;
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${formatDate(item.date)}</td>
+            <td>${item.tasks || '-'}</td>
+            <td class="text-right">${item.duration.toFixed(2)}</td>
+            <td class="text-right">$${amount.toFixed(2)}</td>
+            <td class="text-right">
+              <button class="btn-delete" onclick="deleteVisit('${item.id}')">✕</button>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+
+      // Update Running Totals at Bottom
+      document.getElementById('runningTotalHours').textContent = `${totalHours.toFixed(2)} hrs`;
+      document.getElementById('runningTotalAmount').textContent = `$${totalAmount.toFixed(2)}`;
+    }
+
+    function formatDate(dStr) {
+      const parts = dStr.split('-');
+      return `${parseInt(parts[1])}/${parseInt(parts[2])}/${parts[0]}`;
+    }
+
+    window.deleteVisit = function(id) {
+      if (confirm('Delete this visit entry?')) {
+        visits = visits.filter(v => v.id !== id);
+        localStorage.setItem('michael_m_visits', JSON.stringify(visits));
+        renderMonthView();
+      }
+    };
+
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(() => console.log('SW registered'))
+          .catch((err) => console.error('SW registration failed', err));
+      });
+    }
+
+    // Initial render
+    renderMonthView();
+  </script>
+</body>
+</html>
